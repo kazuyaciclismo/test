@@ -1,0 +1,7 @@
+AWSのサービス立ち上げて
+apt install ruby
+apt install build-essestial
+apt-get install zlib1g-dev
+gem install nokogiri
+
+で、一応スクリプトは動作した
