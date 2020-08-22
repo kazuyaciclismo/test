@@ -54,19 +54,57 @@ end
 class InputSheet
 	attr_reader :data
 	def initialize(spreadsheet)
-		sheet = spreadsheet.worksheet_by_title("input")
+		@sheet = spreadsheet.worksheet_by_title("input")
 		@data = [];
+		@rows = [
+			:words, 
+			:invalids, 
+			:ebay_words, 
+			:ebay_invalids, 
+			:ebay_category, 
+			:enable, 
+			:maxprice, 
+			:order_price, 
+			:purchase_price, 
+			:ebay_sold, 
+			:ebay_sold_url, 
+			:ebay_sell, 
+			:ebay_sell_url, 
+			:ebay_sold_price, 
+			:ebay_sell_price, 
+			:postage, 
+			:priority
+		];
 		i = 2;
 		loop{
-			break if sheet[i,1] == nil or sheet[i,1] == "";
-			@data << {:words => sheet[i,1], :invalids => sheet[i,2], :ebay_words => sheet[i,3], :ebay_invalids => sheet[i,4], :ebay_category => sheet[i,5], :enable => sheet[i,6], :maxprice => sheet[i,7].delete(",").to_i, :order_price => sheet[i,8], :purchase_price => sheet[i,9], :ebay_sold => sheet[i,10], :ebay_sold_url => sheet[i,11], :ebay_sell => sheet[i,12], :ebay_sell_url => sheet[i,13], :ebay_sold_price => sheet[i,14], :ebay_sell_price => sheet[i,15], :postage => sheet[i,16], :priority => sheet[i,17]}
+			break if @sheet[i,1] == nil or @sheet[i,1] == "";
+			rec = Hash.new;
+			@rows.each_with_index{ |x,r| rec[x] = @sheet[i, r+1] }
+			@data << rec;
 			i += 1;
 		}
+	end
+
+	# 入力シートの需給バランス項目を更新
+	def update(num, sold, sell)
+		row = num + 1 + 1;	# 項目名 + sheet index offset
+		@sheet[row, @rows.index(:ebay_sold) + 1] = sold[:count] if sold[:count]
+		@sheet[row, @rows.index(:ebay_sold_url) + 1] = sold[:url];
+		@sheet[row, @rows.index(:ebay_sold_price) + 1] = sold[:market_price] if sold[:market_price]
+		@sheet[row, @rows.index(:ebay_sell) + 1] = sell[:count] if sell[:count]
+		@sheet[row, @rows.index(:ebay_sell_url) + 1] = sell[:url];
+		@sheet[row, @rows.index(:ebay_sell_price) + 1] = sell[:market_price] if sell[:market_price]
+	end
+
+	# シートの保存
+	def save 
+		@sheet.save
 	end
 end
 
 # 出力データシート
 class OutputSheet
+	attr_reader :data;
 	def initialize(spreadsheet)
 		@sheet = spreadsheet.worksheet_by_title("output")
 		@data = [];
@@ -74,8 +112,9 @@ class OutputSheet
 		i = 2;
 		loop{
 			url = @sheet[i,3];
+			url_ebay = @sheet[i,17];	# eBay需要URL
 			break if url == nil or url == "";
-			@data << {:row => i, :url => url}
+			@data << {:row => i, :url => url, :url_ebay => url_ebay}
 			i += 1;
 		}
 	end
@@ -96,24 +135,29 @@ class OutputSheet
 	# 新着商品を末尾に追加
 	def add_new(product)
 		row = lastRow;
-		@sheet[row, 1] = product.date.new_offset('+9:00').strftime("%Y/%m/%d %H:%M");
-		@sheet[row, 2] = product.title;
-		@sheet[row, 3] = product.link;
-		@sheet[row, 4] = product.current;
-		@sheet[row, 5] = product.immediate;
-		@sheet[row, 6] = product.seller;
-		@sheet[row, 7] = product.seller_url;
-		@sheet[row, 8] = product.finish
-		@sheet[row, 9] = product.data[:words];
-		@sheet[row, 10] = product.invalids;
-		@sheet[row, 11] = product.data[:maxprice];
-		#@sheet[row, 12] = product.data[:maxprice]; # 入札予定
-		#@sheet[row, 13] = product.data[:maxprice];  # 予測収益
-		@sheet[row, 14] = product.data[:order_price];  # 価格指定
-		@sheet[row, 15] = product.data[:sold];
-		@sheet[row, 16] = product.data[:sold_url];
-		@sheet[row, 17] = product.data[:sell];
-		@sheet[row, 18] = product.data[:sell_url];
+		@sheet[row, 1] = product.date.new_offset('+9:00').strftime("%Y/%m/%d %H:%M");	# 収集日時
+		@sheet[row, 2] = product.title;				# 商品タイトル
+		@sheet[row, 3] = product.link;				# 商品URL
+		@sheet[row, 4] = product.current;			# 現在価格
+		@sheet[row, 5] = product.immediate;			# 即決価格
+		@sheet[row, 6] = product.seller;			# 出品者
+		@sheet[row, 7] = product.seller_url;			# 出品者URL
+		@sheet[row, 8] = product.finish;			# 終了日時
+		@sheet[row, 9] = product.data[:words];			# 検索ワード
+		@sheet[row, 10] = product.invalids;			# 除外ワード
+		@sheet[row, 11] = "";					# 入札予定
+		@sheet[row, 12] = "";					# 予測収益
+		@sheet[row, 13] = product.data[:maxprice];		# 価格指定
+		@sheet[row, 14] = product.data[:order_price];		# 購入相場
+		@sheet[row, 15] = product.data[:purchase_price];	# 入札上限 
+		@sheet[row, 16] = product.data[:ebay_sold];		# 需要
+		@sheet[row, 17] = product.data[:ebay_sold_url];		# 需要URL
+		@sheet[row, 18] = product.data[:ebay_sell];		# 供給
+		@sheet[row, 19] = product.data[:ebay_sell_url];		# 供給URL
+		@sheet[row, 20] = product.data[:ebay_sold_price];	# 落札相場
+		@sheet[row, 21] = product.data[:ebay_sell_price];	# 出品相場
+		@sheet[row, 22] = product.data[:postage];		# 送料
+		@sheet[row, 23] = product.data[:priority];		# 優先順位 
 	end
 
 	# 既存or新規チェック
@@ -128,6 +172,16 @@ class OutputSheet
 			return i if @sheet[i,1] == "" or @sheet[i,1] == nil;
 			i += 1;
 		}
+	end
+
+	def update_ebay(row, maxprice, order_price, purchase_price, sold, sell, sold_price, sell_price)
+		@sheet[row, 13] = maxprice;
+		@sheet[row, 14] = order_price;
+		@sheet[row, 15] = purchase_price;
+		@sheet[row, 16] = sold;		# 需要
+		@sheet[row, 18] = sell;	        # 供給
+		@sheet[row, 20] = sold_price;	# 落札相場
+		@sheet[row, 21] = sell_price;	# 出品相場
 	end
 
 	# シートに商品情報をストア

@@ -53,22 +53,15 @@ class YahooAuctionList
         # @return 商品リスト配列
         def getList(offset)
                 list = [];
-		# url = YahooAuctionURL + URI.encode_www_form(va: @words) + '&' + URI.encode_www_form(ve: @invalids) + '&b=' + offset.to_s + '&n=' + @request.to_s + '&mode=2&ei=UTF-8&new=1&s1=new&f_adv=1&fr=auc_adv&f=0x4'; # 詳細表示、UTF8、新着、新着順表示
 		url = YahooAuctionURL + URI.encode_www_form(va: @data[:words]) + '&' + URI.encode_www_form(ve: @invalids) + '&b=' + offset.to_s + '&n=' + @request.to_s + '&mode=2&ei=UTF-8&new=1&s1=new'; # 詳細表示、UTF8、新着、新着順表示
-		url = url + '&aucmaxprice=' + @data[:maxprice].to_s if @data[:maxprice] != nil
+		url = url + '&aucmaxprice=' + @data[:maxprice].delete(',').to_s if @data[:maxprice] != nil
 		url = url + '&auccat=' + @category.to_s if @category != nil
 		puts "query: " + url;
                 begin
                         contents = open(url){ |f| @charset = f.charset; f.read }
 			date = DateTime.now
                         doc = Nokogiri::HTML.parse(contents, nil, @charset)
-			if checkCount(doc);
-                        	doc.css('.Product').each{ |p| 
-					# product = YahooAuctionProduct.new(p, @data[:words], @invalids, @data[:maxprice], date);
-					# list << product if product.valid?; 
-					list << YahooAuctionProduct.new(p, @data, @invalids, date);
-				}
-			end
+			doc.css('.Product').each{ |p| list << YahooAuctionProduct.new(p, @data, @invalids, date) } if checkCount(doc);
                 rescue
                         puts "ERROR: #$!"
                 end
@@ -85,14 +78,18 @@ class YahooAuctionList
 end
 
 class YahooAuctionProduct
-	attr_reader :title, :link, :seller, :seller_url, :current, :immediate, :finish, :data, :invalids, :date, :id
+	attr_reader :title, :link, :seller, :seller_url, :rating, :current, :immediate, :finish, :data, :invalids, :date, :id
         # 初期化
         # @param product 商品情報
+        # @param data input情報
+        # @param data 共通除外キーワードを含む除外キーワード
+        # @param date 検索日時
         def initialize(product, data, invalids, date)
                @title = product.css('.Product__titleLink')[0][:title]           # 商品タイトル
                @link = product.css('.Product__titleLink')[0][:href]             # 商品リンク
                @seller = product.css('.Product__seller')[0][:title]             # 出品者名
                @seller_url = product.css('.Product__seller')[0][:href]          # 出品者リンク
+               @rating = product.css('.Product__rating')[0].inner_html          # 出品者評価
                @current = product.css('.Product__priceValue').first.inner_html.delete('円'); # 現在価格
                @immediate = product.css('.Product__priceValue')[1] == nil ? "-" : product.css('.Product__priceValue')[1].inner_html.delete('円');  # 即決価格
 	       @finish = product.css('.Product__otherInfo').css('.u-textGray').inner_html;
