@@ -24,11 +24,11 @@ class Ebay
 			@title = item.css('.s-item__title').inner_html
 			# pp item.css('.s-item__price')
 			if item.css('.s-item__price').css('.POSITIVE').length == 1
-				# @price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('$').to_f
-				@price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('JPY,').to_f
+				@price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('$').to_f
+				# @price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('JPY,').to_f
 			else
-				#@price = item.css('.s-item__price').inner_html.delete('$').to_f
-				@price = item.css('.s-item__price').inner_html.delete('JPY,').to_f
+				@price = item.css('.s-item__price').inner_html.delete('$').to_f
+				#@price = item.css('.s-item__price').inner_html.delete('JPY,').to_f
 			end
 			@link = item.css('.s-item__link')[0][:href]
 		end
@@ -42,6 +42,7 @@ class Ebay
 		@category = category;	# カテゴリ
 
 		@sold = getProducts(makeURL(:sold));
+                sleep(1);
 		@sell = getProducts(makeURL(:sell));
 	end
 
@@ -52,6 +53,7 @@ class Ebay
 		    '&' + URI.encode_www_form(_sacat: @category) + \
 		    "&LH_TitleDesc=0&_fsrp=1&LH_BIN=1&LH_ItemCondition=4&rt=nc";
 		url = url + "&LH_Sold=1&LH1_Complete=1" if type == :sold;
+                puts url;
 		return url;
 	end
 
@@ -61,9 +63,12 @@ class Ebay
 		price = 0;
 		sitems = []
 		ret = {:url => url, :count => 0, :market_price => 0};
+                try = 0;
 		begin
+                        try += 1;
 			charset = nil;
-			contents = open(url, {:proxy => 'http://163.43.108.114:8080'}){ |f| charset = f.charset; f.read }
+			#contents = open(url, {:proxy => 'http://103.233.198.156:8081'}){ |f| charset = f.charset; f.read }
+			contents = open(url){ |f| charset = f.charset; f.read }
 			doc = Nokogiri::HTML.parse(contents, nil, charset)
 			if doc.css('.srp-controls__count-heading').css('.BOLD')[0] != nil;
 				count = doc.css('.srp-controls__count-heading').css('.BOLD')[0].inner_html.to_i;
@@ -76,6 +81,11 @@ class Ebay
 				ret[:market_price] = price;
 			end
 		rescue
+                        if try < 4;
+                              puts "Retry...";
+                              sleep(10);
+                              retry
+                        end
                         puts "ERROR: #$!"
 		end
 		return ret;

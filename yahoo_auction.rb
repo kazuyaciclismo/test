@@ -54,7 +54,7 @@ class YahooAuctionList
         def getList(offset)
                 list = [];
 		url = YahooAuctionURL + URI.encode_www_form(va: @data[:words]) + '&' + URI.encode_www_form(ve: @invalids) + '&b=' + offset.to_s + '&n=' + @request.to_s + '&mode=2&ei=UTF-8&new=1&s1=new'; # 詳細表示、UTF8、新着、新着順表示
-		url = url + '&aucmaxprice=' + @data[:maxprice].delete(',').to_s if @data[:maxprice] != nil
+		url = url + '&aucmaxprice=' + @data[:purchase_price].delete(',').to_s if @data[:purchase_price] != nil
 		url = url + '&auccat=' + @category.to_s if @category != nil
 		puts "query: " + url;
                 begin
@@ -90,8 +90,8 @@ class YahooAuctionProduct
                @seller = product.css('.Product__seller')[0][:title]             # 出品者名
                @seller_url = product.css('.Product__seller')[0][:href]          # 出品者リンク
                @rating = product.css('.Product__rating')[0].inner_html          # 出品者評価
-               @current = product.css('.Product__priceValue').first.inner_html.delete('円'); # 現在価格
-               @immediate = product.css('.Product__priceValue')[1] == nil ? "-" : product.css('.Product__priceValue')[1].inner_html.delete('円');  # 即決価格
+               @current = product.css('.Product__priceValue').first.inner_html.delete(',円'); # 現在価格
+               @immediate = product.css('.Product__priceValue')[1] == nil ? "-" : product.css('.Product__priceValue')[1].inner_html.delete(',円');  # 即決価格
 	       @finish = product.css('.Product__otherInfo').css('.u-textGray').inner_html;
 	       @finish = $1 if /([0-9\s:\/]+)/ =~ @finish		        # 終了日時(ただし残り数分になると表示されない)
 	       @data = data;

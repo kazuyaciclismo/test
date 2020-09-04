@@ -22,7 +22,7 @@ searched = SearchedDB.new(SEARCHED_DB);
 inputs.data.each{ |x|
 	if(x[:enable] != "x")
 		invalids = x[:invalids] + ' ' + bans.words.join(' ');
-		puts "Now Searching '" + x[:words] + "' without '" + invalids.strip + "' limit price " + x[:maxprice].to_s
+		puts "Now Searching '" + x[:words] + "' without '" + invalids.strip + "' limit price " + x[:purchase_price].to_s
 		list = YahooAuctionList.new(x, invalids.strip, config.data[:SearchLimit].to_i, config.data[:AuctionCategory].to_i);
 		filtered = [];
 		#  得られたリストから、まず出力シートにあるデータについて現在価格などを更新
@@ -41,8 +41,11 @@ inputs.data.each{ |x|
 		#  残ったもので出品者を出力シートに追加(ただし出品者チェック済み)
 		filtered.each{ |p| 
 			# 除外出品者、または除外オークションIDでなければ新規アイテムとして記録
+                        puts p.title
+                        puts p.current.delete(',').to_i
+                        puts p.data[:purchase_price].delete(',').to_i
 			if p.seller?(bans.users) and p.ids?(bans.ids) and p.rating.to_f >= config.data[:SellerRateLimit].to_f 
-				if p.data[:maxprice].delete(',').to_i > p.current.to_i or p.data[:order_price].delete(',').to_i > p.current.to_i or p.data[:purchase_price].delete(',').to_i > p.current.to_i
+				if p.data[:purchase_price].delete(',').to_i > p.current.to_i
 					outputs.add_new(p)
 					puts "Add new product: " + p.title;
 				else
