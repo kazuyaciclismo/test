@@ -136,6 +136,13 @@ class YahooAuctionProduct
 		id = $1 if /auction\/(.+)\z/ =~ @link;
 		return id;
 	end
+
+	def YahooAuctionProduct.CheckAlive(url)
+		charset = nil;
+		contents = open(url){ |f| charset = f.charset; f.read }
+		doc = Nokogiri::HTML.parse(contents, nil, charset)
+		return doc.css('.ClosedHeader__tag').size > 0 ? :Closed : :Open
+	end
 end
 
 #yahoo = YahooAuctionList.new("キャノン", "ジャンク", nil, 30);

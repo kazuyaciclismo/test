@@ -7,9 +7,11 @@ SPREADSHEET_KEY = "1qdUk19VOwMmWjQA0QkxUj8j648M1ndtMoGKVy7chVUc";
 SEARCHED_DB = "searched.txt"
 
 # テストシート
-#SPREADSHEET_KEY = "14ypg1DfAMYSkFXPJPAbEE4vVaE56X6_XrU83AHH9Pxc"
-#SEARCHED_DB = "searched_test.txt"
-
+# SPREADSHEET_KEY = "14ypg1DfAMYSkFXPJPAbEE4vVaE56X6_XrU83AHH9Pxc"
+# SEARCHED_DB = "searched_test.txt"
+# 
+#
+puts DateTime.now
 session = GoogleDrive::Session.from_config('config.json')
 spreadsheet = session.spreadsheet_by_key(SPREADSHEET_KEY)
 
@@ -27,6 +29,7 @@ inputs.data.each{ |x|
 		filtered = [];
 		#  得られたリストから、まず出力シートにあるデータについて現在価格などを更新
 		list.products.each{ |p|	
+			puts "check: " + p.title;
 			if(outputs.update(p) == false) 
 				# 出力シートに記載のないものは検索済みか確認
 				if searched.check(p.id) == false and p.finish != ""	# 終了日時が無いものは数分で終了するアイテム
@@ -51,9 +54,11 @@ inputs.data.each{ |x|
 				else
 					puts "price limit:" + p.current.to_s;
 				end
+			else
+				puts "Ban: " + p.title;
 			end
 		}
-		sleep(5);
+		sleep(3);
 	end
 }
 searched.save;

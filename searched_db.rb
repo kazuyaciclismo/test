@@ -20,7 +20,7 @@ class SearchedDB
 	# リストの追加
 	# @param id オークションID
 	# @param deadtime 終了日時(DateTime)
-	def add(id, deadtime)
+	def add(id, deadtime = "")
 		@list << { :id => id, :deadtime => deadtime }
 	end
 

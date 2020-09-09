@@ -24,11 +24,11 @@ class Ebay
 			@title = item.css('.s-item__title').inner_html
 			# pp item.css('.s-item__price')
 			if item.css('.s-item__price').css('.POSITIVE').length == 1
-				@price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('$').to_f
-				# @price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('JPY,').to_f
+				# @price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('$').to_f
+				@price = item.css('.s-item__price').css('.POSITIVE').inner_html.delete('JPY,').to_f
 			else
-				@price = item.css('.s-item__price').inner_html.delete('$').to_f
-				#@price = item.css('.s-item__price').inner_html.delete('JPY,').to_f
+				# @price = item.css('.s-item__price').inner_html.delete('$').to_f
+				@price = item.css('.s-item__price').inner_html.delete('JPY,').to_f
 			end
 			@link = item.css('.s-item__link')[0][:href]
 		end
